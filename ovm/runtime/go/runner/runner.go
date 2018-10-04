@@ -16,13 +16,13 @@ func (runner Runner) getContract(address string) bool {
 
   SimpleContract.prototype.setWord = function(word) {
     this.context.set('word', word);
-    return true;
+    return word;
   }
 
   SimpleContract.prototype.getWord = function () {
     return this.context.get('word');
   }
-  module.Contract = SimpleContract
+  module.Contract = SimpleContract;
   `
   _, error := runner.vm.Run(`var module = {};(function(module){` + code + `})(module)`)
   if error == nil {
@@ -96,9 +96,13 @@ func (runner Runner) initialContext() {
 }
 
 func (runner Runner) exec(callString string) (string, string) {
-  runner.vm.Run(`
+  _, error := runner.vm.Run(`
+    var a = unknow.length; //this is an error sample
     var contract = new module.Contract(context);
-    var retValue = contract.` + callString);
+    var retValue = contract.` + callString)
+  if error != nil {
+    panic(error)
+  }
   runner.vm.Run(`
     var list = context.getUpdateIndexList();
     var storage = context.getStorage();
