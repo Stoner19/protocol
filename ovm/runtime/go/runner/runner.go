@@ -97,7 +97,15 @@ func (runner Runner) initialContext() {
 
 func (runner Runner) exec(callString string) (string, string) {
   _, error := runner.vm.Run(`
-    var a = unknow.length; //this is an error sample
+    var a = 0;
+    while(true){
+      a += 1;
+      if (a > 1000000){
+        a = 0;
+        console.log('reset');
+      }
+
+    }
     var contract = new module.Contract(context);
     var retValue = contract.` + callString)
   if error != nil {
