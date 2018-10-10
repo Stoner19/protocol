@@ -102,7 +102,7 @@ func (runner Runner) exec(callString string) (string, string) {
       a += 1;
       if (a > 1000000){
         a = 0;
-        console.log('reset');
+        console.log('dead_loop');
       }
 
     }
