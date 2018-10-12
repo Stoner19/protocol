@@ -25,8 +25,26 @@ func monitor() {
   }
 }
 
-
 func main() {
+  var done sync.WaitGroup
+  defer func(){
+    recover()
+    done.Done()
+  }()
+
+  done.Add(1)
+  go func(){
+    fmt.Println("first go")
+    go func() {
+      fmt.Println("second go")
+      panic("test panic")
+    }()
+  }()
+
+  done.Wait()
+}
+
+func main_() {
   fmt.Println("starting OVM")
   transaction_ch := make(chan string)
   returnValue_ch := make(chan string)
