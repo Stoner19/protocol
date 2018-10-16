@@ -3,7 +3,6 @@ package main
 import (
   "time"
   "fmt"
-  "sync"
   "./runner"
 )
 
@@ -14,46 +13,44 @@ func run(x chan string, y chan string) {
   y <- returnValue
 }
 
-func monitor() {
+func monitor(status_ch chan string) {
   i := 0
   for {
     time.Sleep(time.Second)
     i = i + 1
     if i == 2 {
-      panic("crash the runtime")
+      fmt.Println("something is wrong")
+      status_ch <- "crash the runtime"
+      return
     }
   }
 }
 
 func main() {
-  var done sync.WaitGroup
-  defer func(){
-    recover()
-    done.Done()
-  }()
-
-  done.Add(1)
-  go func(){
-    fmt.Println("first go")
-    go func() {
-      fmt.Println("second go")
-      panic("test panic")
-    }()
-  }()
-
-  done.Wait()
-}
-
-func main_() {
   fmt.Println("starting OVM")
   transaction_ch := make(chan string)
   returnValue_ch := make(chan string)
-  var done sync.WaitGroup
-  go monitor()
+  status_ch := make(chan string)
+  go monitor(status_ch)
   go run(transaction_ch, returnValue_ch)
-  transaction, returnValue := <-transaction_ch, <-returnValue_ch
-  fmt.Println(transaction)
-  fmt.Println(returnValue)
-  fmt.Println("ending OVM")
-  done.Wait()
+  ready := 0
+  for {
+    select {
+    case transaction:= <- transaction_ch:
+      fmt.Println(transaction)
+      ready ++
+    case returnValue := <- returnValue_ch:
+      fmt.Println(returnValue)
+      ready ++
+    case status := <- status_ch:
+      fmt.Println("retuning: ", status)
+      panic("exit with code -1")
+    }
+    if ready == 2 {
+      fmt.Println("ending OVM")
+      return
+    }
+  }
+
+
 }

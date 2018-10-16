@@ -98,14 +98,14 @@ func (runner Runner) initialContext() {
 func (runner Runner) exec(callString string) (string, string) {
   _, error := runner.vm.Run(`
     var a = 0;
-    while(true){
-      a += 1;
-      if (a > 1000000){
-        a = 0;
-        console.log('dead_loop');
-      }
+    //while(true){
+    //  a += 1;
+    //  if (a > 1000000){
+    //    a = 0;
+    //    console.log('dead_loop');
+    //  }
 
-    }
+    //}
     var contract = new module.Contract(context);
     var retValue = contract.` + callString)
   if error != nil {
