@@ -4,6 +4,7 @@ import (
   "time"
   "fmt"
   "./runner"
+  "os"
 )
 
 func run(x chan string, y chan string) {
@@ -15,10 +16,11 @@ func run(x chan string, y chan string) {
 
 func monitor(status_ch chan string) {
   i := 0
+  threshold := 60
   for {
     time.Sleep(time.Second)
     i = i + 1
-    if i == 2 {
+    if i >= threshold {
       fmt.Println("something is wrong")
       status_ch <- "crash the runtime"
       return
@@ -28,6 +30,19 @@ func monitor(status_ch chan string) {
 
 func main() {
   fmt.Println("starting OVM")
+  defer func() {
+    if r := recover(); r != nil {
+      panic(r);
+    }
+    os.Remove("./ovm.pid")
+  }()
+
+  if _, err := os.Stat("./ovm.pid"); !os.IsNotExist(err) {
+    panic("ovm.pid file exists, there is another ovm running or exit abnormally")
+  }
+
+  os.Create("./ovm.pid")
+
   transaction_ch := make(chan string)
   returnValue_ch := make(chan string)
   status_ch := make(chan string)
