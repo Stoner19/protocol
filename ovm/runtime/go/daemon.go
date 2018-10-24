@@ -19,10 +19,10 @@ func getProgressWheel(i int) (string, int) {
 func checkRunningStatus (progressWheel string) {
   if _, err := os.Stat("./ovm.pid"); !os.IsNotExist(err) {
     fmt.Printf("\033[2K\r")
-    fmt.Printf("ovm is still running %s", progressWheel)
+    fmt.Printf("ovm is running %s", progressWheel)
   } else {
     fmt.Printf("\033[2K\r")
-    fmt.Printf("ovm stopped normally %s", progressWheel)
+    fmt.Printf("ovm stopped normally")
   }
 }
 
