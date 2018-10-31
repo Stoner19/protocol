@@ -1,11 +1,11 @@
-var SimpleContract = function (context) {
+var DeadLoopContract = function (context) {
   this.context = context;
 }
 
 
-SimpleContract.prototype.default__ = function () {
+DeadLoopContract.prototype.default__ = function () {
   while(true){
     console.log('loop...');
   }
 }
-module.Contract = SimpleContract;
+module.Contract = DeadLoopContract;

@@ -1,18 +1,18 @@
-var SimpleContract = function (context) {
+var HellowWorldContract = function (context) {
   this.context = context;
 }
 
-SimpleContract.prototype.default__ = function() {
+HellowWorldContract.prototype.default__ = function() {
   this.context.set('word', 'hello, by default');
   return 'hello, by default';
 }
 
-SimpleContract.prototype.setWord = function(word) {
+HellowWorldContract.prototype.setWord = function(word) {
   this.context.set('word', word);
   return word;
 }
 
-SimpleContract.prototype.getWord = function () {
+HellowWorldContract.prototype.getWord = function () {
   return this.context.get('word');
 }
-module.Contract = SimpleContract;
+module.Contract = HellowWorldContract;
