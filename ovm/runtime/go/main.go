@@ -6,6 +6,7 @@ import (
   "log"
   "./runner"
   "./monitor"
+  "./committor"
 )
 
 func run(x chan string, y chan string, status_ch chan monitor.Status, from string, address string, transaction string, olt int) {
@@ -25,7 +26,8 @@ func run(x chan string, y chan string, status_ch chan monitor.Status, from strin
 func commit(returnValue string, transaction string) {
   log.Print(returnValue)
   log.Print(transaction)
-  log.Print("TODO: implement the commit back to the blockchain")
+  c := committor.Create()
+  c.Commit(returnValue, transaction)
 }
 
 func main() {
