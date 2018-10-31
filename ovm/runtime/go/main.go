@@ -1,9 +1,9 @@
 package main
 
 import (
-  "fmt"
   "os"
   "flag"
+  "log"
   "./runner"
   "./monitor"
 )
@@ -11,7 +11,7 @@ import (
 func run(x chan string, y chan string, status_ch chan monitor.Status, from string, address string, transaction string, olt int) {
   defer func() {
     if r:= recover(); r != nil {
-      fmt.Println(r)
+      log.Println(r)
       status_ch <- monitor.Status{"scripting running error",monitor.STATUS_ERROR}
     }
   }()
@@ -22,8 +22,14 @@ func run(x chan string, y chan string, status_ch chan monitor.Status, from strin
   y <- returnValue
 }
 
+func commit(returnValue string, transaction string) {
+  log.Print(returnValue)
+  log.Print(transaction)
+  log.Print("TODO: implement the commit back to the blockchain")
+}
+
 func main() {
-  fmt.Println("starting OVM")
+  log.Println("starting OVM")
 
   address := flag.String("address", "samples://helloworld", "the address of your smart contract")
 
@@ -37,7 +43,7 @@ func main() {
 
   flag.Parse()
 
-  fmt.Printf("from:\t%s\naddress:\t%s\ntransaction:\t%s\ntype:\t%s\nvalue:\t%x\n",
+  log.Printf("\nfrom:\t%s\naddress:\t%s\ntransaction:\t%s\ntype:\t%s\nvalue:\t%x\n",
       *call_from,
       *address,
       *call_transaction,
@@ -54,9 +60,9 @@ func main() {
   defer func() {
     r := recover()
     if  r != nil {
-      fmt.Println(status)
+      log.Println(status)
       os.Remove(monitor.GetPidFilePath())
-      panic(r);
+      log.Fatal(r);
     } else {
       os.Remove(monitor.GetPidFilePath())
     }
@@ -66,7 +72,7 @@ func main() {
   if err == true  {
     panic(status)
   } else {
-    fmt.Println("VM Initialized finished, with status:",status.Details, ",  and code:", status.Code)
+    log.Println("VM Initialized finished, with status:",status.Details, ",  and code:", status.Code)
   }
 
   os.Create(monitor.GetPidFilePath())
@@ -84,13 +90,12 @@ func main() {
     case returnValue = <- returnValue_ch:
       ready ++
     case status := <- status_ch:
-      fmt.Println("retuning: ", status.Details, "with code", status.Code)
-      panic("exit with code -1")
+      log.Println("retuning: ", status.Details, "with code", status.Code)
+      panic("exit with error")
     }
     if ready == 2 {
-      fmt.Println(returnValue)
-      fmt.Println(transaction)
-      fmt.Println("ending OVM")
+      commit(returnValue, transaction)
+      log.Println("ending OVM")
       return
     }
   }
