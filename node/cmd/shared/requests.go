@@ -86,6 +86,15 @@ type SendArguments struct {
 	Fee          string
 }
 
+type InstallArguments struct {
+	Owner    string
+	Version  string
+	Name     string
+	Currency string
+	Gas      string
+	Fee      string
+}
+
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateSendRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
@@ -359,4 +368,69 @@ func CreateExSendRequest(args *ExSendArguments) []byte {
 	}
 
 	return SignAndPack(exSend)
+}
+
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateInstallRequest(args *InstallArguments) []byte {
+	conv := convert.NewConvert()
+
+	if args.Owner == "" {
+		log.Error("Missing Owner argument")
+		return nil
+	}
+
+	if args.Version == "" {
+		log.Error("Missing Version argument")
+		return nil
+	}
+
+	if args.Name == "" {
+		log.Error("Missing Name argument")
+		return nil
+	}
+
+	// TODO: Can't convert identities to accounts, this way!
+	owner := GetAccountKey(args.Owner)
+	if owner == nil {
+		log.Fatal("System doesn't recognize the owner", "args", args,
+			"owner", owner)
+		//return nil
+	}
+
+	//partyBalance := GetBalance(owner).GetAmountByName(args.Currency)
+
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
+
+	if conv.HasErrors() {
+		Console.Error(conv.GetErrors())
+		os.Exit(-1)
+	}
+
+	//inputs := make([]action.InstallInput, 0)
+	//inputs = append(inputs,
+	//	action.NewInstallInput(owner, partyBalance))
+
+	sequence := GetSequenceNumber(owner)
+
+	inputs := action.Install{
+		Name:    args.Name,
+		Version: args.Version,
+	}
+
+	// Create base transaction
+	send := &action.Contract{
+		Base: action.Base{
+			Type:     action.SMARTCONTRACT,
+			ChainId:  app.ChainId,
+			Owner:    owner,
+			Signers:  action.GetSigners(owner),
+			Sequence: sequence,
+		},
+		Data:     inputs,
+		Function: action.INSTALL,
+		Fee:      fee,
+		Gas:      gas,
+	}
+	return SignAndPack(action.Transaction(send))
 }

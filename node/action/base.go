@@ -37,6 +37,7 @@ const (
 	PREPARE            // Do everything, except commit
 	COMMIT             // Commit to doing the work
 	FORGET             // Rollback and forget that this happened
+	SMARTCONTRACT      // Install and Execute smart contracts
 )
 
 const (
