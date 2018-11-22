@@ -99,6 +99,15 @@ type InstallArguments struct {
 	Fee      string
 }
 
+type ExecuteArguments struct {
+	Owner    string
+	Name     string
+	Version  string
+	Currency string
+	Gas      string
+	Fee      string
+}
+
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateSendRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
@@ -476,4 +485,69 @@ func ParseVersion(argsVersion string) *version.Version {
 		Minor: minor,
 		Patch: patch,
 	}
+}
+
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateExecuteRequest(args *ExecuteArguments) []byte {
+	conv := convert.NewConvert()
+
+	if args.Owner == "" {
+		log.Error("Missing Owner argument")
+		return nil
+	}
+
+	if args.Name == "" {
+		log.Error("Missing Name argument")
+		return nil
+	}
+
+	if args.Version == "" {
+		log.Error("Missing Version argument")
+		return nil
+	}
+
+	// TODO: Can't convert identities to accounts, this way!
+	owner := GetAccountKey(args.Owner)
+	if owner == nil {
+		log.Fatal("System doesn't recognize the owner", "args", args,
+			"owner", owner)
+		//return nil
+	}
+
+	version := ParseVersion(args.Version)
+	if version == nil {
+		Console.Info("Version error", args.Version)
+		return nil
+	}
+
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
+
+	sequence := GetSequenceNumber(owner)
+
+	inputs := action.Execute{
+		Name:    args.Name,
+		Version: *version,
+	}
+
+	if conv.HasErrors() {
+		Console.Error(conv.GetErrors())
+		os.Exit(-1)
+	}
+
+	// Create base transaction
+	send := &action.Contract{
+		Base: action.Base{
+			Type:     action.SMARTCONTRACT,
+			ChainId:  app.ChainId,
+			Owner:    owner,
+			Signers:  action.GetSigners(owner),
+			Sequence: sequence,
+		},
+		Data:     inputs,
+		Function: action.EXECUTE,
+		Fee:      fee,
+		Gas:      gas,
+	}
+	return SignAndPack(action.Transaction(send))
 }
