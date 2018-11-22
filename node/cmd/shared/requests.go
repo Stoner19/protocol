@@ -7,7 +7,10 @@
 package shared
 
 import (
+	"github.com/Oneledger/protocol/node/version"
 	"os"
+	"regexp"
+	"strconv"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
@@ -390,32 +393,34 @@ func CreateInstallRequest(args *InstallArguments) []byte {
 	}
 
 	// TODO: Can't convert identities to accounts, this way!
+	Console.Info("ArgsOwner", "args.owner", args.Owner)
 	owner := GetAccountKey(args.Owner)
+	Console.Info("OwnerAccountKey", "owner", owner)
 	if owner == nil {
 		log.Fatal("System doesn't recognize the owner", "args", args,
 			"owner", owner)
 		//return nil
 	}
 
-	//partyBalance := GetBalance(owner).GetAmountByName(args.Currency)
-
 	fee := conv.GetCoin(args.Fee, args.Currency)
 	gas := conv.GetCoin(args.Gas, args.Currency)
 
-	if conv.HasErrors() {
-		Console.Error(conv.GetErrors())
-		os.Exit(-1)
+	version := ParseVersion(args.Version)
+	if version == nil {
+		Console.Info("version error", args.Version)
+		return nil
 	}
-
-	//inputs := make([]action.InstallInput, 0)
-	//inputs = append(inputs,
-	//	action.NewInstallInput(owner, partyBalance))
 
 	sequence := GetSequenceNumber(owner)
 
 	inputs := action.Install{
+		Version: *version,
 		Name:    args.Name,
-		Version: args.Version,
+	}
+
+	if conv.HasErrors() {
+		Console.Error(conv.GetErrors())
+		os.Exit(-1)
 	}
 
 	// Create base transaction
@@ -433,4 +438,37 @@ func CreateInstallRequest(args *InstallArguments) []byte {
 		Gas:      gas,
 	}
 	return SignAndPack(action.Transaction(send))
+}
+
+func ParseVersion(argsVersion string) *version.Version {
+	automata := regexp.MustCompile(`v([0-9]*)\.([0-9]*)\.([0-9]*)`)
+	groups := automata.FindStringSubmatch(argsVersion)
+
+	//log.Dump("VersionGroups", groups)
+	if groups == nil || len(groups) != 4 {
+		Console.Info("groups", groups)
+		Console.Info("len", len(groups))
+		return nil
+	}
+
+	major, err := strconv.Atoi(groups[1])
+	if err != nil {
+		log.Debug("ParseVersion", "major", major, "err", err)
+	}
+
+	minor, err := strconv.Atoi(groups[2])
+	if err != nil {
+		log.Debug("ParseVersion", "minor", minor, "err", err)
+	}
+
+	patch, err := strconv.Atoi(groups[3])
+	if err != nil {
+		log.Debug("ParseVersion", "patch", patch, "err", err)
+	}
+
+	return &version.Version{
+		Major: major,
+		Minor: minor,
+		Patch: patch,
+	}
 }

@@ -96,6 +96,8 @@ func ValidateSignature(transaction SignedTransaction) bool {
 		signers = v.Base.Signers
 	case *Register:
 		signers = v.Base.Signers
+	case *Contract:
+		signers = v.Base.Signers
 	default:
 		log.Warn("Signature validation (unknown transaction type)", "transaction", transaction)
 	}

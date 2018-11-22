@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
+	"github.com/Oneledger/protocol/node/version"
 )
 
 type ContractFunction int
@@ -35,7 +36,7 @@ type ContractData interface {
 
 type Install struct {
 	//ToDo: all the data you need to install contract
-	Version string
+	Version version.Version
 	Name    string
 }
 
@@ -45,6 +46,11 @@ type Execute struct {
 
 func init() {
 	serial.Register(Contract{})
+	serial.Register(Install{})
+	serial.Register(Execute{})
+
+	var prototype ContractData
+	serial.RegisterInterface(&prototype)
 }
 
 func (transaction *Contract) TransactionType() Type {

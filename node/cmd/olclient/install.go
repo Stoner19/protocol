@@ -24,9 +24,9 @@ func init() {
 	RootCmd.AddCommand(installCmd)
 
 	// Transaction Parameters
-	installCmd.Flags().StringVar(&installArgs.Owner, "owner", "", "install owner")
-	installCmd.Flags().StringVar(&installArgs.Version, "version", "", "install version")
-	installCmd.Flags().StringVar(&installArgs.Name, "name", "0", "install name")
+	installCmd.Flags().StringVar(&installArgs.Owner, "owner", "", "script owner")
+	installCmd.Flags().StringVar(&installArgs.Version, "version", "", "script version")
+	installCmd.Flags().StringVar(&installArgs.Name, "name", "0", "script name")
 	installCmd.Flags().StringVar(&installArgs.Currency, "currency", "OLT", "the currency")
 
 	installCmd.Flags().StringVar(&installArgs.Fee, "fee", "4", "include a fee")
@@ -39,6 +39,9 @@ func IssueInstallRequest(cmd *cobra.Command, args []string) {
 
 	// Create message
 	packet := shared.CreateInstallRequest(installArgs)
+	if packet == nil {
+		shared.Console.Info("CreateInstallRequest bad arguments", installArgs)
+	}
 
 	result := comm.Broadcast(packet)
 
