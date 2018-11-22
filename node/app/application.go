@@ -37,12 +37,13 @@ type Application struct {
 	Identities *id.Identities   // Keep a higher-level identity for a given user
 
 	// Local Node state (data is different for each node)
-	Accounts *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
-	Admin    data.Datastore // any administrative parameters
-	Event    data.Datastore // Event for any action that need to be tracked
-	Status   data.Datastore // current state of any composite transactions (pending, verified, etc.)
-	Contract data.Datastore // contract for reuse.
-	Sequence data.Datastore // Store sequence number per account
+	Accounts      *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
+	Admin         data.Datastore // any administrative parameters
+	Event         data.Datastore // Event for any action that need to be tracked
+	Status        data.Datastore // current state of any composite transactions (pending, verified, etc.)
+	Contract      data.Datastore // contract for reuse.
+	Sequence      data.Datastore // Store sequence number per account
+	SmartContract data.Datastore //Store olvm contracts
 
 	SDK common.Service
 
@@ -57,12 +58,13 @@ func NewApplication() *Application {
 		Identities: id.NewIdentities("identities"),
 		Balances:   data.NewChainState("balances", data.PERSISTENT),
 
-		Accounts: id.NewAccounts("accounts"),
-		Admin:    data.NewDatastore("admin", data.PERSISTENT),
-		Event:    data.NewDatastore("event", data.PERSISTENT),
-		Status:   data.NewDatastore("status", data.PERSISTENT),
-		Contract: data.NewDatastore("contract", data.PERSISTENT),
-		Sequence: data.NewDatastore("sequence", data.PERSISTENT),
+		Accounts:      id.NewAccounts("accounts"),
+		Admin:         data.NewDatastore("admin", data.PERSISTENT),
+		Event:         data.NewDatastore("event", data.PERSISTENT),
+		Status:        data.NewDatastore("status", data.PERSISTENT),
+		Contract:      data.NewDatastore("contract", data.PERSISTENT),
+		Sequence:      data.NewDatastore("sequence", data.PERSISTENT),
+		SmartContract: data.NewDatastore("smartContract", data.PERSISTENT),
 	}
 }
 
@@ -518,6 +520,7 @@ func (app Application) Close() {
 	app.Event.Close()
 	app.Contract.Close()
 	app.Sequence.Close()
+	app.SmartContract.Close()
 
 	if app.SDK != nil {
 		app.SDK.Stop()

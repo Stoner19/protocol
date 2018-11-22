@@ -36,8 +36,9 @@ type ContractData interface {
 
 type Install struct {
 	//ToDo: all the data you need to install contract
-	Version version.Version
 	Name    string
+	Version version.Version
+	Script  []byte
 }
 
 type Execute struct {
@@ -58,33 +59,36 @@ func (transaction *Contract) TransactionType() Type {
 }
 
 func (transaction *Contract) Validate() status.Code {
-	log.Debug("Validating Contract Transaction")
+	log.Debug("Validating Smart Contract Transaction")
 
-	if transaction.Data == nil {
-		log.Debug("Missing Data", "contract", transaction)
+	//check that the data supplied is valid and no security problems
+
+	if transaction.Owner == nil {
+		log.Debug("Missing Data", "transaction owner", transaction.Owner)
 		return status.MISSING_DATA
 	}
 
-	//if transaction.Function == nil {
-	//	log.Debug("Missing Gas", "contract", transaction)
-	//	return status.MISSING_DATA
-	//}
+	if transaction.Data == nil {
+		log.Debug("Missing Data", "transaction data", transaction)
+		return status.MISSING_DATA
+	}
+
+	installData := transaction.Data.(Install)
+	if installData.Name == "" {
+		log.Debug("Missing Data", "name", installData.Name)
+		return status.MISSING_DATA
+	}
+
+	if installData.Script == nil {
+		log.Debug("Missing Data", "script", installData.Script)
+		return status.MISSING_DATA
+	}
 
 	return status.SUCCESS
 }
 
 func (transaction *Contract) ProcessCheck(app interface{}) status.Code {
-	log.Debug("Processing Contract Transaction for CheckTx")
-
-	//if !CheckAmounts(app, transaction.Data, transaction.Function) {
-	//	log.Debug("FAILED", "inputs", transaction.Data, "outputs", transaction.Function)
-	//	return status.INVALID
-	//return status.SUCCESS
-	//}
-
-	// TODO: Validate the transaction against the UTXO database, check tree
-	balances := GetBalances(app)
-	_ = balances
+	log.Debug("Processing Smart Contract Transaction for CheckTx")
 
 	return status.SUCCESS
 }
@@ -94,27 +98,15 @@ func (transaction *Contract) ShouldProcess(app interface{}) bool {
 }
 
 func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
-	log.Debug("Processing Contract Transaction for DeliverTx")
+	log.Debug("Processing Smart Contract Transaction for DeliverTx")
 
-	//if !CheckAmounts(app, transaction.Data, transaction.Function) {
-	//	return status.INVALID
-	//}
+	owner := transaction.Owner
+	installData := transaction.Data.(Install)
 
-	//	balances := GetBalances(app)
-
-	// Update the database to the final set of entries
-	//for _, entry := range transaction.Outputs {
-	//	var balance *data.Balance
-	//	result := balances.Get(entry.AccountKey)
-	//	if result == nil {
-	//		tmp := data.NewBalance()
-	//		result = &tmp
-	//	}
-	//	balance = result
-	//	balance.SetAmmount(entry.Amount)
-	//
-	//		balances.Set(entry.AccountKey, *balance)
-	//	}
+	smartContracts := GetSmartContracts(app)
+	session := smartContracts.Begin()
+	session.Set(owner, installData)
+	session.Commit()
 
 	return status.SUCCESS
 }

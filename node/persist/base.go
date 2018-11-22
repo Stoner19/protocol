@@ -13,4 +13,5 @@ type Access interface {
 	GetChainID() interface{}
 	GetEvent() interface{}
 	GetContract() interface{}
+	GetSmartContract() interface{}
 }

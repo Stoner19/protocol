@@ -74,3 +74,11 @@ func GetContracts(app interface{}) data.Datastore {
 	}
 	return htlcs
 }
+
+func GetSmartContracts(app interface{}) data.Datastore {
+	smartContracts := app.(persist.Access).GetSmartContract().(data.Datastore)
+	if smartContracts == nil {
+		log.Fatal("SmartContract Database Missing", "config", global.Current, "app", app)
+	}
+	return smartContracts
+}

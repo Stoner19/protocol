@@ -42,3 +42,7 @@ func (app Application) GetEvent() interface{} {
 func (app Application) GetContract() interface{} {
 	return app.Contract
 }
+
+func (app Application) GetSmartContract() interface{} {
+	return app.SmartContract
+}

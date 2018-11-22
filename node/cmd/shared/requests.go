@@ -91,8 +91,9 @@ type SendArguments struct {
 
 type InstallArguments struct {
 	Owner    string
-	Version  string
 	Name     string
+	Version  string
+	File     string
 	Currency string
 	Gas      string
 	Fee      string
@@ -374,16 +375,11 @@ func CreateExSendRequest(args *ExSendArguments) []byte {
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
-func CreateInstallRequest(args *InstallArguments) []byte {
+func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 	conv := convert.NewConvert()
 
 	if args.Owner == "" {
 		log.Error("Missing Owner argument")
-		return nil
-	}
-
-	if args.Version == "" {
-		log.Error("Missing Version argument")
 		return nil
 	}
 
@@ -392,30 +388,39 @@ func CreateInstallRequest(args *InstallArguments) []byte {
 		return nil
 	}
 
+	if args.Version == "" {
+		log.Error("Missing Version argument")
+		return nil
+	}
+
+	if script == nil {
+		log.Error("Missing Script")
+		return nil
+	}
+
 	// TODO: Can't convert identities to accounts, this way!
-	Console.Info("ArgsOwner", "args.owner", args.Owner)
 	owner := GetAccountKey(args.Owner)
-	Console.Info("OwnerAccountKey", "owner", owner)
 	if owner == nil {
 		log.Fatal("System doesn't recognize the owner", "args", args,
 			"owner", owner)
 		//return nil
 	}
 
-	fee := conv.GetCoin(args.Fee, args.Currency)
-	gas := conv.GetCoin(args.Gas, args.Currency)
-
 	version := ParseVersion(args.Version)
 	if version == nil {
-		Console.Info("version error", args.Version)
+		Console.Info("Version error", args.Version)
 		return nil
 	}
+
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
 
 	sequence := GetSequenceNumber(owner)
 
 	inputs := action.Install{
-		Version: *version,
 		Name:    args.Name,
+		Version: *version,
+		Script:  script,
 	}
 
 	if conv.HasErrors() {
