@@ -81,6 +81,12 @@ swaptest: resetDevnet install
 	@./tests/swap.sh
 	@./scripts/stopDevnet
 
+#
+# Smart Contract Testing, install and execute smart contracts
+#
+smarttest: stop reset start register
+	@./tests/contract.sh
+
 
 #
 # Start up a node, make sure it is stopped first
@@ -149,3 +155,4 @@ protobuf:
 # targets that are not associated with any files
 #
 .PHONY: all build install utest test tools update stop start full
+
