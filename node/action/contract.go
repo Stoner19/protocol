@@ -117,28 +117,47 @@ func (transaction *Contract) ShouldProcess(app interface{}) bool {
 	return true
 }
 
+func Convert(installData Install) (string, version.Version, data.Script) {
+	name := installData.Name
+	version := installData.Version
+	script := data.Script{
+		Script: installData.Script,
+	}
+	return name, version, script
+}
+
 func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Smart Contract Transaction for DeliverTx")
 
 	if transaction.Function == INSTALL {
 		owner := transaction.Owner
 		installData := transaction.Data.(Install)
+		name, version, script := Convert(installData)
 
 		smartContracts := GetSmartContracts(app)
+		var scriptRecord *data.Scripts
+		raw := smartContracts.Get(owner)
+		if raw == nil {
+			scriptRecord = data.NewScripts()
+		} else {
+			scriptRecord = raw.(*data.Scripts)
+		}
+		scriptRecord.Set(name, version, script)
 		session := smartContracts.Begin()
-		session.Set(owner, installData)
+		session.Set(owner, scriptRecord)
 		session.Commit()
 	}
 
 	if transaction.Function == EXECUTE {
 		owner := transaction.Owner
+		executeData := transaction.Data.(Execute)
 		smartContracts := GetSmartContracts(app)
 		raw := smartContracts.Get(owner)
 		if raw != nil {
-			//ToDo: ContractData instead of Install and Execute?
-			interim := raw.(Install)
-			script := interim.Script
-			RunScript(script)
+			scriptRecord := raw.(*data.Scripts)
+			versions := scriptRecord.Name[executeData.Name]
+			script := versions.Version[executeData.Version.String()]
+			RunScript(script.Script)
 		}
 	}
 
