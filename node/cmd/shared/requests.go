@@ -407,17 +407,16 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 		return nil
 	}
 
-	// TODO: Can't convert identities to accounts, this way!
 	owner := GetAccountKey(args.Owner)
 	if owner == nil {
 		log.Fatal("System doesn't recognize the owner", "args", args,
 			"owner", owner)
-		//return nil
+		return nil
 	}
 
 	version := ParseVersion(args.Version)
 	if version == nil {
-		Console.Info("Version error", args.Version)
+		log.Debug("Version error", "version", args.Version)
 		return nil
 	}
 
@@ -460,8 +459,7 @@ func ParseVersion(argsVersion string) *version.Version {
 
 	//log.Dump("VersionGroups", groups)
 	if groups == nil || len(groups) != 4 {
-		Console.Info("groups", groups)
-		Console.Info("len", len(groups))
+		log.Debug("ParseVersion", "groups", groups, "groupsLen", len(groups))
 		return nil
 	}
 
@@ -506,17 +504,16 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 		return nil
 	}
 
-	// TODO: Can't convert identities to accounts, this way!
 	owner := GetAccountKey(args.Owner)
 	if owner == nil {
 		log.Fatal("System doesn't recognize the owner", "args", args,
 			"owner", owner)
-		//return nil
+		return nil
 	}
 
 	version := ParseVersion(args.Version)
 	if version == nil {
-		Console.Info("Version error", args.Version)
+		log.Debug("Version error", "version", args.Version)
 		return nil
 	}
 

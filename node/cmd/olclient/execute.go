@@ -41,6 +41,7 @@ func IssueExecuteRequest(cmd *cobra.Command, args []string) {
 	packet := shared.CreateExecuteRequest(executeArgs)
 	if packet == nil {
 		shared.Console.Info("CreateExecuteRequest bad arguments", executeArgs)
+		return
 	}
 
 	result := comm.Broadcast(packet)

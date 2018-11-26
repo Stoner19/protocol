@@ -1,7 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	An incoming transaction, send, swap, ready, verification, etc.
+	Handle Smart Contarct Install and Execute functions
 */
 package action
 
@@ -43,7 +43,6 @@ type Execute struct {
 	//ToDo: all the data you need to execute contract
 	Name    string
 	Version version.Version
-	Script  []byte
 }
 
 func init() {
@@ -65,41 +64,51 @@ func (transaction *Contract) Validate() status.Code {
 	//check that the data supplied is valid and no security problems
 	if transaction.Function == INSTALL {
 		if transaction.Owner == nil {
-			log.Debug("Missing Data", "transaction owner", transaction.Owner)
+			log.Debug("Smart Contract Missing Data", "transaction owner", transaction.Owner)
 			return status.MISSING_DATA
 		}
 
 		if transaction.Data == nil {
-			log.Debug("Missing Data", "transaction data", transaction)
+			log.Debug("Smart Contract Missing Data", "transaction data", transaction)
 			return status.MISSING_DATA
 		}
 
 		installData := transaction.Data.(Install)
 		if installData.Name == "" {
-			log.Debug("Missing Data", "name", installData.Name)
+			log.Debug("Smart Contract Missing Data", "name", installData.Name)
+			return status.MISSING_DATA
+		}
+
+		if installData.Version.String() == "" {
+			log.Debug("Smart Contract Missing Data", "version", installData.Version)
 			return status.MISSING_DATA
 		}
 
 		if installData.Script == nil {
-			log.Debug("Missing Data", "script", installData.Script)
+			log.Debug("Smart Contract Missing Data", "script", installData.Script)
 			return status.MISSING_DATA
 		}
 	}
 
 	if transaction.Function == EXECUTE {
 		if transaction.Owner == nil {
-			log.Debug("Missing Data", "transaction owner", transaction.Owner)
+			log.Debug("Smart Contract Missing Data", "transaction owner", transaction.Owner)
 			return status.MISSING_DATA
 		}
 
 		if transaction.Data == nil {
-			log.Debug("Missing Data", "transaction data", transaction)
+			log.Debug("Smart Contract Missing Data", "transaction data", transaction)
 			return status.MISSING_DATA
 		}
 
 		executeData := transaction.Data.(Execute)
 		if executeData.Name == "" {
-			log.Debug("Missing Data", "name", executeData.Name)
+			log.Debug("Smart Contract Missing Data", "name", executeData.Name)
+			return status.MISSING_DATA
+		}
+
+		if executeData.Version.String() == "" {
+			log.Debug("Smart Contract Missing Data", "version", executeData.Version)
 			return status.MISSING_DATA
 		}
 	}
@@ -135,16 +144,16 @@ func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
 		name, version, script := Convert(installData)
 
 		smartContracts := GetSmartContracts(app)
-		var scriptRecord *data.Scripts
+		var scriptRecords *data.ScriptRecords
 		raw := smartContracts.Get(owner)
 		if raw == nil {
-			scriptRecord = data.NewScripts()
+			scriptRecords = data.NewScriptRecords()
 		} else {
-			scriptRecord = raw.(*data.Scripts)
+			scriptRecords = raw.(*data.ScriptRecords)
 		}
-		scriptRecord.Set(name, version, script)
+		scriptRecords.Set(name, version, script)
 		session := smartContracts.Begin()
-		session.Set(owner, scriptRecord)
+		session.Set(owner, scriptRecords)
 		session.Commit()
 	}
 
@@ -154,8 +163,8 @@ func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
 		smartContracts := GetSmartContracts(app)
 		raw := smartContracts.Get(owner)
 		if raw != nil {
-			scriptRecord := raw.(*data.Scripts)
-			versions := scriptRecord.Name[executeData.Name]
+			scriptRecords := raw.(*data.ScriptRecords)
+			versions := scriptRecords.Name[executeData.Name]
 			script := versions.Version[executeData.Version.String()]
 			RunScript(script.Script)
 		}
@@ -169,5 +178,5 @@ func (transaction *Contract) Resolve(app interface{}) Commands {
 }
 
 func RunScript(script []byte) {
-	log.Debug("Execute script", "script", string(script))
+	log.Debug("Smart Contract Execute script", "script", string(script))
 }

@@ -43,7 +43,7 @@ type Application struct {
 	Status        data.Datastore // current state of any composite transactions (pending, verified, etc.)
 	Contract      data.Datastore // contract for reuse.
 	Sequence      data.Datastore // Store sequence number per account
-	SmartContract data.Datastore //Store olvm contracts
+	SmartContract data.Datastore //Store olvm smart contracts
 
 	SDK common.Service
 

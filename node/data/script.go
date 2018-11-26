@@ -5,7 +5,7 @@ import (
 	"github.com/Oneledger/protocol/node/version"
 )
 
-type Scripts struct {
+type ScriptRecords struct {
 	Name map[string]Versions
 }
 
@@ -18,24 +18,24 @@ type Script struct {
 }
 
 func init() {
-	serial.Register(Scripts{})
+	serial.Register(ScriptRecords{})
 	serial.Register(Versions{})
 	serial.Register(Script{})
 }
 
-func NewScripts() *Scripts {
-	return &Scripts{
+func NewScriptRecords() *ScriptRecords {
+	return &ScriptRecords{
 		Name: make(map[string]Versions, 0),
 	}
 }
 
-func (scripts *Scripts) Set(name string, version version.Version, script Script) {
+func (scriptRecords *ScriptRecords) Set(name string, version version.Version, script Script) {
 	var versions Versions
 	var ok bool
 
-	if versions, ok = scripts.Name[name]; !ok {
-		scripts.Name[name] = *NewVersions()
-		versions = scripts.Name[name]
+	if versions, ok = scriptRecords.Name[name]; !ok {
+		scriptRecords.Name[name] = *NewVersions()
+		versions = scriptRecords.Name[name]
 	}
 	versions.Version[version.String()] = script
 }

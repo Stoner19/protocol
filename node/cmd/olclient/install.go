@@ -39,11 +39,15 @@ func IssueInstallRequest(cmd *cobra.Command, args []string) {
 	log.Debug("Have Install Request", "installArgs", installArgs)
 
 	script := shared.ReadFile(installArgs.File)
+	if script == nil {
+		shared.Console.Info("CreateInstallRequest no script file", installArgs.File)
+	}
 
 	// Create message
 	packet := shared.CreateInstallRequest(installArgs, script)
 	if packet == nil {
 		shared.Console.Info("CreateInstallRequest bad arguments", installArgs)
+		return
 	}
 
 	result := comm.Broadcast(packet)
