@@ -84,7 +84,7 @@ swaptest: resetDevnet install
 #
 # Smart Contract Testing, install and execute smart contracts
 #
-smarttest: stop reset start register
+contracttest: stop reset start register
 	@./tests/contract.sh
 
 
