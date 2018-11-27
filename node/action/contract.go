@@ -6,6 +6,7 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
@@ -149,22 +150,22 @@ func Convert(installData Install) (string, version.Version, data.Script) {
 func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Smart Contract Transaction for DeliverTx")
 
-	var result Transaction
+	//var result Transaction
 	switch transaction.Function {
 	case INSTALL:
 		transaction.Install(app)
 	case EXECUTE:
-		result = transaction.Execute(app)
+		transaction.Execute(app)
 	case COMPARE:
 		transaction.Compare(app)
 	default:
 		return status.INVALID
 	}
 
-	if result != nil {
-		log.Debug("JustBeforeBroadcastTransaction", "result", result)
-		BroadcastTransaction(SMARTCONTRACT, result, false)
-	}
+	//if result != nil {
+	//	log.Debug("JustBeforeBroadcastTransaction", "result", result)
+	//	BroadcastTransaction(SMART_CONTRACT, result, false)
+	//}
 	return status.SUCCESS
 }
 
@@ -214,9 +215,9 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 				resultCompare := transaction.CreateCompareRequest(app, executeData.Name, executeData.Version, resultRunScript)
 				if resultCompare != nil {
 					//TODO: check this later
-					//comm.BroadcastAsync(resultCompare)
+					comm.BroadcastAsync(resultCompare)
 					//BroadcastTransaction(SMARTCONTRACT, resultCompare, false)
-					return resultCompare
+					//return resultCompare
 				}
 			}
 
@@ -248,7 +249,7 @@ func RunScript(script []byte) string {
 	return "Ta-dah"
 }
 
-func (transaction *Contract) CreateCompareRequest(app interface{}, name string, version version.Version, resultRunScript string) Transaction {
+func (transaction *Contract) CreateCompareRequest(app interface{}, name string, version version.Version, resultRunScript string) []byte {
 
 	chainId := GetChainID(app)
 
@@ -266,7 +267,7 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, name string, 
 	// Create base transaction
 	compare := &Contract{
 		Base: Base{
-			Type:     SMARTCONTRACT,
+			Type:     SMART_CONTRACT,
 			ChainId:  chainId,
 			Owner:    transaction.Owner,
 			Signers:  GetSigners(transaction.Owner),
@@ -277,5 +278,5 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, name string, 
 		Fee:      fee,
 		Gas:      gas,
 	}
-	return compare //SignAndPack(Transaction(compare))
+	return SignAndPack(Transaction(compare))
 }

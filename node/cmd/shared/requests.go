@@ -8,6 +8,10 @@ package shared
 
 import (
 	"github.com/Oneledger/protocol/node/version"
+
+	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/serial"
+
 	"os"
 	"regexp"
 	"strconv"
@@ -78,6 +82,24 @@ type BalanceArguments struct {
 
 func CreateBalanceRequest(args *BalanceArguments) []byte {
 	return []byte(nil)
+}
+
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateApplyValidatorRequest(args *comm.ApplyValidatorArguments) []byte {
+	request, err := serial.Serialize(args, serial.CLIENT)
+	if err != nil {
+		log.Error("Failed to Serialize arguments: ", err)
+	}
+
+	response := comm.Query("/applyValidators", request)
+
+	if response == nil {
+		log.Warn("Query returned no response", "request", request)
+	}
+
+	log.Debug("CreateApplyValidatorRequest", "response", response)
+
+	return response.([]byte)
 }
 
 type SendArguments struct {
@@ -439,7 +461,7 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 	// Create base transaction
 	install := &action.Contract{
 		Base: action.Base{
-			Type:     action.SMARTCONTRACT,
+			Type:     action.SMART_CONTRACT,
 			ChainId:  app.ChainId,
 			Owner:    owner,
 			Signers:  action.GetSigners(owner),
@@ -535,7 +557,7 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 	// Create base transaction
 	execute := &action.Contract{
 		Base: action.Base{
-			Type:     action.SMARTCONTRACT,
+			Type:     action.SMART_CONTRACT,
 			ChainId:  app.ChainId,
 			Owner:    owner,
 			Signers:  action.GetSigners(owner),
