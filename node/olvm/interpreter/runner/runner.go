@@ -75,9 +75,14 @@ func (runner Runner) Call(request *OLVMRequest, result *OLVMResult) (err error) 
 	result.Ret = ret
 	return
 }
+func (runner Runner) Interrupt(f func()) {
+	runner.vm.Interrupt <- f
+}
+
 
 func CreateRunner() Runner {
 	vm := otto.New()
+	vm.Interrupt = make(chan func(), 1)
 	vm.Set("version", "OVM 0.1 TEST")
 	return Runner{vm}
 }

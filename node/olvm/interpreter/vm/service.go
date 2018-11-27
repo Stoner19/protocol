@@ -42,15 +42,14 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 			go func() {
 				debug.PrintStack()
 				log.Dump("Details", "request", request, "result", result)
-				log.Fatal("OLVM Panicked", "status", r)
+				log.Error("OLVM Panicked", "status", r)
 			}()
 		}
 	}()
+	runner := runner.CreateRunner()
 
 	go mo.CheckStatus(status_ch)
 	go func() {
-		runner := runner.CreateRunner()
-
 		error := runner.Call(request, result)
 		if error != nil {
 			status_ch <- monitor.Status{error.Error(), monitor.STATUS_ERROR}
@@ -66,7 +65,9 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 			return
 		case status := <-status_ch:
 			err = errors.New(fmt.Sprintf("%s : %d", status.Details, status.Code))
-			panic(status)
+			runner.Interrupt(func() {
+				panic(status)
+			})
 		}
 	}
 	return
