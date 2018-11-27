@@ -357,6 +357,6 @@ func HandleSequenceNumberQuery(app Application, arguments map[string]string) int
 }
 
 func SequenceNumber(app Application, accountKey []byte) interface{} {
-	sequenceRecord := NextSequence(&app, accountKey)
+	sequenceRecord := id.NextSequence(&app, accountKey)
 	return sequenceRecord
 }

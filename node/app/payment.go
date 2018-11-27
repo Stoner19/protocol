@@ -8,7 +8,7 @@ import (
 	"github.com/Oneledger/protocol/node/status"
 )
 
-func CreatePaymentRequest(app Application, identities []id.Identity, quotient data.Coin, height int64) []byte {
+func (app *Application) CreatePaymentRequest(identities []id.Identity, quotient data.Coin, height int64) []byte {
 	chainId := app.Admin.Get(chainKey)
 	inputs := make([]action.SendInput, 0)
 	outputs := make([]action.SendOutput, 0)
@@ -63,7 +63,7 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 			Type:     action.PAYMENT,
 			ChainId:  string(chainId.([]byte)),
 			Owner:    payment.AccountKey(),
-			Signers:  GetSigners(payment.AccountKey(), app),
+			Signers:  GetSigners(payment.AccountKey(), *app),
 			Sequence: height, //global.Current.Sequence,
 		},
 		Inputs:  inputs,
@@ -72,5 +72,5 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 		Gas:     data.NewCoin(0, "OLT"),
 	}
 
-	return action.PackRequest(SignTransaction(send, app))
+	return action.PackRequest(SignTransaction(send, *app))
 }

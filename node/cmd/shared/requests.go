@@ -437,7 +437,7 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 	}
 
 	// Create base transaction
-	send := &action.Contract{
+	install := &action.Contract{
 		Base: action.Base{
 			Type:     action.SMARTCONTRACT,
 			ChainId:  app.ChainId,
@@ -450,7 +450,7 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 		Fee:      fee,
 		Gas:      gas,
 	}
-	return SignAndPack(action.Transaction(send))
+	return SignAndPack(action.Transaction(install))
 }
 
 func ParseVersion(argsVersion string) *version.Version {
@@ -533,7 +533,7 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 	}
 
 	// Create base transaction
-	send := &action.Contract{
+	execute := &action.Contract{
 		Base: action.Base{
 			Type:     action.SMARTCONTRACT,
 			ChainId:  app.ChainId,
@@ -546,5 +546,5 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 		Fee:      fee,
 		Gas:      gas,
 	}
-	return SignAndPack(action.Transaction(send))
+	return SignAndPack(action.Transaction(execute))
 }

@@ -6,6 +6,8 @@
 
 package app
 
+import "github.com/Oneledger/protocol/node/log"
+
 // Access to the local persistent databases
 func (app Application) GetAdmin() interface{} {
 	return app.Admin
@@ -45,4 +47,13 @@ func (app Application) GetContract() interface{} {
 
 func (app Application) GetSmartContract() interface{} {
 	return app.SmartContract
+}
+
+func (app Application) GetValidators() interface{} {
+	log.Dump("Pat2", app.Validators)
+	return app.Validators
+}
+
+func (app Application) GetSequence() interface{} {
+	return app.Sequence
 }

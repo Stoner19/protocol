@@ -7,6 +7,8 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
@@ -18,6 +20,7 @@ type ContractFunction int
 const (
 	INSTALL ContractFunction = iota
 	EXECUTE
+	COMPARE
 )
 
 // Synchronize a swap between two users
@@ -45,10 +48,18 @@ type Execute struct {
 	Version version.Version
 }
 
+type Compare struct {
+	//ToDo: all the data you need to execute contract
+	Name    string
+	Version version.Version
+	Results string
+}
+
 func init() {
 	serial.Register(Contract{})
 	serial.Register(Install{})
 	serial.Register(Execute{})
+	serial.Register(Compare{})
 
 	var prototype ContractData
 	serial.RegisterInterface(&prototype)
@@ -138,38 +149,22 @@ func Convert(installData Install) (string, version.Version, data.Script) {
 func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Smart Contract Transaction for DeliverTx")
 
-	if transaction.Function == INSTALL {
-		owner := transaction.Owner
-		installData := transaction.Data.(Install)
-		name, version, script := Convert(installData)
-
-		smartContracts := GetSmartContracts(app)
-		var scriptRecords *data.ScriptRecords
-		raw := smartContracts.Get(owner)
-		if raw == nil {
-			scriptRecords = data.NewScriptRecords()
-		} else {
-			scriptRecords = raw.(*data.ScriptRecords)
-		}
-		scriptRecords.Set(name, version, script)
-		session := smartContracts.Begin()
-		session.Set(owner, scriptRecords)
-		session.Commit()
+	var result Transaction
+	switch transaction.Function {
+	case INSTALL:
+		transaction.Install(app)
+	case EXECUTE:
+		result = transaction.Execute(app)
+	case COMPARE:
+		transaction.Compare(app)
+	default:
+		return status.INVALID
 	}
 
-	if transaction.Function == EXECUTE {
-		owner := transaction.Owner
-		executeData := transaction.Data.(Execute)
-		smartContracts := GetSmartContracts(app)
-		raw := smartContracts.Get(owner)
-		if raw != nil {
-			scriptRecords := raw.(*data.ScriptRecords)
-			versions := scriptRecords.Name[executeData.Name]
-			script := versions.Version[executeData.Version.String()]
-			RunScript(script.Script)
-		}
+	if result != nil {
+		log.Debug("JustBeforeBroadcastTransaction", "result", result)
+		BroadcastTransaction(SMARTCONTRACT, result, false)
 	}
-
 	return status.SUCCESS
 }
 
@@ -177,6 +172,110 @@ func (transaction *Contract) Resolve(app interface{}) Commands {
 	return []Command{}
 }
 
-func RunScript(script []byte) {
+func (transaction *Contract) Install(app interface{}) {
+	owner := transaction.Owner
+	installData := transaction.Data.(Install)
+	name, version, script := Convert(installData)
+
+	smartContracts := GetSmartContracts(app)
+	var scriptRecords *data.ScriptRecords
+	raw := smartContracts.Get(owner)
+	if raw == nil {
+		scriptRecords = data.NewScriptRecords()
+	} else {
+		scriptRecords = raw.(*data.ScriptRecords)
+	}
+	scriptRecords.Set(name, version, script)
+	session := smartContracts.Begin()
+	session.Set(owner, scriptRecords)
+	session.Commit()
+}
+
+func (transaction *Contract) Execute(app interface{}) Transaction {
+	//figure out the it node and run execute once
+	//needs to take the result and put it in a new contract transaction and broadcast async
+
+	validatorList := id.GetValidators(app)
+	log.Dump("Pat3", validatorList)
+	log.Debug("Execute NodeName", "validatorList", validatorList)
+	selectedValidatorIdentity := validatorList.SelectedValidator
+	log.Debug("Execute NodeName", "nodeName", selectedValidatorIdentity.NodeName)
+	log.Debug("Execute NodeName", "globalNodeName", global.Current.NodeName)
+	if global.Current.NodeName == selectedValidatorIdentity.NodeName {
+		executeData := transaction.Data.(Execute)
+		smartContracts := GetSmartContracts(app)
+		raw := smartContracts.Get(transaction.Owner)
+		if raw != nil {
+			scriptRecords := raw.(*data.ScriptRecords)
+			versions := scriptRecords.Name[executeData.Name]
+			script := versions.Version[executeData.Version.String()]
+			resultRunScript := RunScript(script.Script)
+			if resultRunScript != "" {
+				resultCompare := transaction.CreateCompareRequest(app, executeData.Name, executeData.Version, resultRunScript)
+				if resultCompare != nil {
+					//TODO: check this later
+					//comm.BroadcastAsync(resultCompare)
+					//BroadcastTransaction(SMARTCONTRACT, resultCompare, false)
+					return resultCompare
+				}
+			}
+
+		}
+	}
+	return nil
+}
+
+func (transaction *Contract) Compare(app interface{}) status.Code {
+	//see that new transaction, run the engine, if the results are the same, return success, otherwise fail
+	log.Debug("InsideCompare", "transaction", transaction)
+	compareData := transaction.Data.(Compare)
+	smartContracts := GetSmartContracts(app)
+	raw := smartContracts.Get(transaction.Owner)
+	if raw != nil {
+		scriptRecords := raw.(*data.ScriptRecords)
+		versions := scriptRecords.Name[compareData.Name]
+		script := versions.Version[compareData.Version.String()]
+		resultRunScript := RunScript(script.Script)
+		if resultRunScript == compareData.Results {
+			return status.SUCCESS
+		}
+	}
+	return status.INVALID
+}
+
+func RunScript(script []byte) string {
 	log.Debug("Smart Contract Execute script", "script", string(script))
+	return "Ta-dah"
+}
+
+func (transaction *Contract) CreateCompareRequest(app interface{}, name string, version version.Version, resultRunScript string) Transaction {
+
+	chainId := GetChainID(app)
+
+	fee := data.NewCoin(0, "OLT")
+	gas := data.NewCoin(0, "OLT")
+
+	next := id.NextSequence(app, transaction.Owner)
+
+	inputs := Compare{
+		Name:    name,
+		Version: version,
+		Results: resultRunScript,
+	}
+
+	// Create base transaction
+	compare := &Contract{
+		Base: Base{
+			Type:     SMARTCONTRACT,
+			ChainId:  chainId,
+			Owner:    transaction.Owner,
+			Signers:  GetSigners(transaction.Owner),
+			Sequence: next.Sequence,
+		},
+		Data:     inputs,
+		Function: COMPARE,
+		Fee:      fee,
+		Gas:      gas,
+	}
+	return compare //SignAndPack(Transaction(compare))
 }
