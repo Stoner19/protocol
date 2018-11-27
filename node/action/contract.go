@@ -215,7 +215,7 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 				resultCompare := transaction.CreateCompareRequest(app, executeData.Name, executeData.Version, resultRunScript)
 				if resultCompare != nil {
 					//TODO: check this later
-					comm.BroadcastAsync(resultCompare)
+					comm.Broadcast(resultCompare)
 					//BroadcastTransaction(SMARTCONTRACT, resultCompare, false)
 					//return resultCompare
 				}
@@ -267,10 +267,11 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, name string, 
 	// Create base transaction
 	compare := &Contract{
 		Base: Base{
-			Type:     SMART_CONTRACT,
-			ChainId:  chainId,
-			Owner:    transaction.Owner,
-			Signers:  GetSigners(transaction.Owner),
+			Type:    SMART_CONTRACT,
+			ChainId: chainId,
+			Owner:   transaction.Owner,
+			//Signers:  GetSigners(transaction.Owner),
+			Signers:  transaction.Signers,
 			Sequence: next.Sequence,
 		},
 		Data:     inputs,
