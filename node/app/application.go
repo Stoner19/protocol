@@ -312,10 +312,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	validators := req.LastCommitInfo.GetValidators()
 	byzantineValidators := req.ByzantineValidators
 
-	log.Debug("BeginBlockBeforeValidatorSet", "validators", app.Validators)
 	app.Validators.Set(app, validators, byzantineValidators, req.Header.LastBlockHash)
-	log.Dump("Pat", app.Validators)
-	log.Debug("BeginBlockAfterValidatorSet", "validators", app.Validators)
 
 	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
 	if raw == nil {
@@ -384,7 +381,6 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 	}
 
 	if (!paymentBalance.GetAmountByName("OLT").LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
-		log.Debug("ApprovedValidators", "test", app.Validators.Approved)
 		approvedValidatorIdentities := app.Validators.Approved
 		selectedValidatorIdentity := app.Validators.SelectedValidator
 

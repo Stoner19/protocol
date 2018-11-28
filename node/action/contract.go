@@ -150,7 +150,6 @@ func Convert(installData Install) (string, version.Version, data.Script) {
 func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Smart Contract Transaction for DeliverTx")
 
-	//var result Transaction
 	switch transaction.Function {
 	case INSTALL:
 		transaction.Install(app)
@@ -171,7 +170,7 @@ func (transaction *Contract) Resolve(app interface{}) Commands {
 	return []Command{}
 }
 
-//Install stores the script in the SmartContract database
+//Install: store the script in the SmartContract database
 func (transaction *Contract) Install(app interface{}) {
 	owner := transaction.Owner
 	installData := transaction.Data.(Install)
@@ -191,8 +190,8 @@ func (transaction *Contract) Install(app interface{}) {
 	session.Commit()
 }
 
-//Execute finds the selected validator - who runs the script and keeps the result,
-//then create a Compare transaction, get the results, if they're the same, then broadcast
+//Execute: find the selected validator - who runs the script and keeps the result,
+//then creates a Compare transaction then broadcast, get the results, check the results if they're the same
 func (transaction *Contract) Execute(app interface{}) Transaction {
 	validatorList := id.GetValidators(app)
 	selectedValidatorIdentity := validatorList.SelectedValidator
@@ -212,7 +211,6 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 					comm.Broadcast(resultCompare)
 				}
 			}
-
 		}
 	}
 	return nil
