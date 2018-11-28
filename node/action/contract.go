@@ -50,7 +50,7 @@ type Execute struct {
 }
 
 type Compare struct {
-	//ToDo: all the data you need to execute contract
+	//ToDo: all the data you need to compare contract
 	Name    string
 	Version version.Version
 	Results string
@@ -76,51 +76,51 @@ func (transaction *Contract) Validate() status.Code {
 	//check that the data supplied is valid and no security problems
 	if transaction.Function == INSTALL {
 		if transaction.Owner == nil {
-			log.Debug("Smart Contract Missing Data", "transaction owner", transaction.Owner)
+			log.Error("Smart Contract Missing Data", "transaction owner", transaction.Owner)
 			return status.MISSING_DATA
 		}
 
 		if transaction.Data == nil {
-			log.Debug("Smart Contract Missing Data", "transaction data", transaction)
+			log.Error("Smart Contract Missing Data", "transaction data", transaction)
 			return status.MISSING_DATA
 		}
 
 		installData := transaction.Data.(Install)
 		if installData.Name == "" {
-			log.Debug("Smart Contract Missing Data", "name", installData.Name)
+			log.Error("Smart Contract Missing Data", "name", installData.Name)
 			return status.MISSING_DATA
 		}
 
 		if installData.Version.String() == "" {
-			log.Debug("Smart Contract Missing Data", "version", installData.Version)
+			log.Error("Smart Contract Missing Data", "version", installData.Version)
 			return status.MISSING_DATA
 		}
 
 		if installData.Script == nil {
-			log.Debug("Smart Contract Missing Data", "script", installData.Script)
+			log.Error("Smart Contract Missing Data", "script", installData.Script)
 			return status.MISSING_DATA
 		}
 	}
 
 	if transaction.Function == EXECUTE {
 		if transaction.Owner == nil {
-			log.Debug("Smart Contract Missing Data", "transaction owner", transaction.Owner)
+			log.Error("Smart Contract Missing Data", "transaction owner", transaction.Owner)
 			return status.MISSING_DATA
 		}
 
 		if transaction.Data == nil {
-			log.Debug("Smart Contract Missing Data", "transaction data", transaction)
+			log.Error("Smart Contract Missing Data", "transaction data", transaction)
 			return status.MISSING_DATA
 		}
 
 		executeData := transaction.Data.(Execute)
 		if executeData.Name == "" {
-			log.Debug("Smart Contract Missing Data", "name", executeData.Name)
+			log.Error("Smart Contract Missing Data", "name", executeData.Name)
 			return status.MISSING_DATA
 		}
 
 		if executeData.Version.String() == "" {
-			log.Debug("Smart Contract Missing Data", "version", executeData.Version)
+			log.Error("Smart Contract Missing Data", "version", executeData.Version)
 			return status.MISSING_DATA
 		}
 	}
@@ -155,17 +155,15 @@ func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
 	case INSTALL:
 		transaction.Install(app)
 	case EXECUTE:
-		transaction.Execute(app)
+		//TODO: Need to fix this after
+		go transaction.Execute(app)
 	case COMPARE:
-		transaction.Compare(app)
+		status := transaction.Compare(app)
+		return status
 	default:
 		return status.INVALID
 	}
 
-	//if result != nil {
-	//	log.Debug("JustBeforeBroadcastTransaction", "result", result)
-	//	BroadcastTransaction(SMART_CONTRACT, result, false)
-	//}
 	return status.SUCCESS
 }
 
@@ -173,6 +171,7 @@ func (transaction *Contract) Resolve(app interface{}) Commands {
 	return []Command{}
 }
 
+//Install stores the script in the SmartContract database
 func (transaction *Contract) Install(app interface{}) {
 	owner := transaction.Owner
 	installData := transaction.Data.(Install)
@@ -192,16 +191,11 @@ func (transaction *Contract) Install(app interface{}) {
 	session.Commit()
 }
 
+//Execute finds the selected validator - who runs the script and keeps the result,
+//then create a Compare transaction, get the results, if they're the same, then broadcast
 func (transaction *Contract) Execute(app interface{}) Transaction {
-	//figure out the it node and run execute once
-	//needs to take the result and put it in a new contract transaction and broadcast async
-
 	validatorList := id.GetValidators(app)
-	log.Dump("Pat3", validatorList)
-	log.Debug("Execute NodeName", "validatorList", validatorList)
 	selectedValidatorIdentity := validatorList.SelectedValidator
-	log.Debug("Execute NodeName", "nodeName", selectedValidatorIdentity.NodeName)
-	log.Debug("Execute NodeName", "globalNodeName", global.Current.NodeName)
 	if global.Current.NodeName == selectedValidatorIdentity.NodeName {
 		executeData := transaction.Data.(Execute)
 		smartContracts := GetSmartContracts(app)
@@ -210,14 +204,12 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 			scriptRecords := raw.(*data.ScriptRecords)
 			versions := scriptRecords.Name[executeData.Name]
 			script := versions.Version[executeData.Version.String()]
-			resultRunScript := RunScript(script.Script)
-			if resultRunScript != "" {
-				resultCompare := transaction.CreateCompareRequest(app, executeData.Name, executeData.Version, resultRunScript)
+			result := RunScript(script.Script)
+			if result != "" {
+				resultCompare := transaction.CreateCompareRequest(app, executeData.Name, executeData.Version, result)
 				if resultCompare != nil {
 					//TODO: check this later
 					comm.Broadcast(resultCompare)
-					//BroadcastTransaction(SMARTCONTRACT, resultCompare, false)
-					//return resultCompare
 				}
 			}
 
@@ -226,9 +218,8 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 	return nil
 }
 
+//Execute calls this and compare the results
 func (transaction *Contract) Compare(app interface{}) status.Code {
-	//see that new transaction, run the engine, if the results are the same, return success, otherwise fail
-	log.Debug("InsideCompare", "transaction", transaction)
 	compareData := transaction.Data.(Compare)
 	smartContracts := GetSmartContracts(app)
 	raw := smartContracts.Get(transaction.Owner)
@@ -236,8 +227,8 @@ func (transaction *Contract) Compare(app interface{}) status.Code {
 		scriptRecords := raw.(*data.ScriptRecords)
 		versions := scriptRecords.Name[compareData.Name]
 		script := versions.Version[compareData.Version.String()]
-		resultRunScript := RunScript(script.Script)
-		if resultRunScript == compareData.Results {
+		result := RunScript(script.Script)
+		if result == compareData.Results {
 			return status.SUCCESS
 		}
 	}

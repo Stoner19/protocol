@@ -3,7 +3,6 @@ package id
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/tendermint/tendermint/abci/types"
 	"math/big"
@@ -31,7 +30,6 @@ func (list *Validators) Set(app interface{}, validators []types.SigningValidator
 	list.Signers = validators
 	list.Byzantines = badValidators
 	list.Approved = list.FindApproved(app)
-	log.Debug("ValidatorsSet", "listApproved", list.Approved)
 	if hash != nil {
 		list.SelectedValidator = list.FindSelectedValidator(app, hash)
 	}
@@ -51,9 +49,7 @@ func (list *Validators) FindSelectedValidator(app interface{}, hash []byte) Iden
 func (list *Validators) FindApproved(app interface{}) []Identity {
 	var approvedIdentities []Identity
 	for _, entry := range list.Signers {
-		log.Debug("FindApproved", "entryValidator", entry.Validator)
 		entryIsBad := IsByzantine(entry.Validator, list.Byzantines)
-		log.Debug("FindApproved", "entryIsBad", entryIsBad)
 		if !entryIsBad {
 			formatted := hex.EncodeToString(entry.Validator.Address)
 			identities := GetIdentities(app)
@@ -61,7 +57,6 @@ func (list *Validators) FindApproved(app interface{}) []Identity {
 			approvedIdentities = append(approvedIdentities, identity)
 		}
 	}
-	log.Debug("FindApproved", "approvedIdentities", approvedIdentities)
 	return approvedIdentities
 }
 
