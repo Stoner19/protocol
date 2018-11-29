@@ -170,7 +170,7 @@ func (transaction *Contract) Resolve(app interface{}) Commands {
 	return []Command{}
 }
 
-//Install: store the script in the SmartContract database
+//Install store the script in the SmartContract database
 func (transaction *Contract) Install(app interface{}) {
 	owner := transaction.Owner
 	installData := transaction.Data.(Install)
@@ -190,7 +190,7 @@ func (transaction *Contract) Install(app interface{}) {
 	session.Commit()
 }
 
-//Execute: find the selected validator - who runs the script and keeps the result,
+//Execute find the selected validator - who runs the script and keeps the result,
 //then creates a Compare transaction then broadcast, get the results, check the results if they're the same
 func (transaction *Contract) Execute(app interface{}) Transaction {
 	validatorList := id.GetValidators(app)
