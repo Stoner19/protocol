@@ -38,6 +38,7 @@ type ContractData interface {
 
 type Install struct {
 	//ToDo: all the data you need to install contract
+	Owner   id.AccountKey
 	Name    string
 	Version version.Version
 	Script  []byte
@@ -45,12 +46,14 @@ type Install struct {
 
 type Execute struct {
 	//ToDo: all the data you need to execute contract
+	Owner   id.AccountKey
 	Name    string
 	Version version.Version
 }
 
 type Compare struct {
 	//ToDo: all the data you need to compare contract
+	Owner   id.AccountKey
 	Name    string
 	Version version.Version
 	Results string
@@ -138,13 +141,14 @@ func (transaction *Contract) ShouldProcess(app interface{}) bool {
 	return true
 }
 
-func Convert(installData Install) (string, version.Version, data.Script) {
+func Convert(installData Install) (id.AccountKey, string, version.Version, data.Script) {
+	owner := installData.Owner
 	name := installData.Name
 	version := installData.Version
 	script := data.Script{
 		Script: installData.Script,
 	}
-	return name, version, script
+	return owner, name, version, script
 }
 
 func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
@@ -172,9 +176,9 @@ func (transaction *Contract) Resolve(app interface{}) Commands {
 
 //Install store the script in the SmartContract database
 func (transaction *Contract) Install(app interface{}) {
-	owner := transaction.Owner
+
 	installData := transaction.Data.(Install)
-	name, version, script := Convert(installData)
+	owner, name, version, script := Convert(installData)
 
 	smartContracts := GetSmartContracts(app)
 	var scriptRecords *data.ScriptRecords
@@ -198,14 +202,14 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 	if global.Current.NodeName == selectedValidatorIdentity.NodeName {
 		executeData := transaction.Data.(Execute)
 		smartContracts := GetSmartContracts(app)
-		raw := smartContracts.Get(transaction.Owner)
+		raw := smartContracts.Get(executeData.Owner)
 		if raw != nil {
 			scriptRecords := raw.(*data.ScriptRecords)
 			versions := scriptRecords.Name[executeData.Name]
 			script := versions.Version[executeData.Version.String()]
 			result := RunScript(script.Script)
 			if result != "" {
-				resultCompare := transaction.CreateCompareRequest(app, executeData.Name, executeData.Version, result)
+				resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name, executeData.Version, result)
 				if resultCompare != nil {
 					//TODO: check this later
 					comm.Broadcast(resultCompare)
@@ -220,7 +224,7 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 func (transaction *Contract) Compare(app interface{}) status.Code {
 	compareData := transaction.Data.(Compare)
 	smartContracts := GetSmartContracts(app)
-	raw := smartContracts.Get(transaction.Owner)
+	raw := smartContracts.Get(compareData.Owner)
 	if raw != nil {
 		scriptRecords := raw.(*data.ScriptRecords)
 		versions := scriptRecords.Name[compareData.Name]
@@ -238,7 +242,7 @@ func RunScript(script []byte) string {
 	return "Ta-dah"
 }
 
-func (transaction *Contract) CreateCompareRequest(app interface{}, name string, version version.Version, resultRunScript string) []byte {
+func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.AccountKey, name string, version version.Version, resultRunScript string) []byte {
 
 	chainId := GetChainID(app)
 
@@ -248,19 +252,21 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, name string, 
 	next := id.NextSequence(app, transaction.Owner)
 
 	inputs := Compare{
+		Owner:   owner,
 		Name:    name,
 		Version: version,
 		Results: resultRunScript,
 	}
 
+	account := GetNodeAccount(app)
+
 	// Create base transaction
 	compare := &Contract{
 		Base: Base{
-			Type:    SMART_CONTRACT,
-			ChainId: chainId,
-			Owner:   transaction.Owner,
-			//Signers:  GetSigners(transaction.Owner),
-			Signers:  transaction.Signers,
+			Type:     SMART_CONTRACT,
+			ChainId:  chainId,
+			Owner:    account.AccountKey(),
+			Signers:  GetSigners(account.AccountKey()),
 			Sequence: next.Sequence,
 		},
 		Data:     inputs,
@@ -268,5 +274,6 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, name string, 
 		Fee:      fee,
 		Gas:      gas,
 	}
-	return SignAndPack(Transaction(compare))
+	result := SignAndPack(Transaction(compare))
+	return result
 }

@@ -448,6 +448,7 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 	sequence := GetSequenceNumber(owner)
 
 	inputs := action.Install{
+		Owner:   owner,
 		Name:    args.Name,
 		Version: *version,
 		Script:  script,
@@ -458,13 +459,19 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 		os.Exit(-1)
 	}
 
+	signers := action.GetSigners(owner)
+	if signers == nil {
+		log.Debug("Missing Signers")
+		return nil
+	}
+
 	// Create base transaction
 	install := &action.Contract{
 		Base: action.Base{
 			Type:     action.SMART_CONTRACT,
 			ChainId:  app.ChainId,
 			Owner:    owner,
-			Signers:  action.GetSigners(owner),
+			Signers:  signers, //action.GetSigners(owner),
 			Sequence: sequence,
 		},
 		Data:     inputs,
@@ -545,6 +552,7 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 	sequence := GetSequenceNumber(owner)
 
 	inputs := action.Execute{
+		Owner:   owner,
 		Name:    args.Name,
 		Version: *version,
 	}
