@@ -443,6 +443,8 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 			if err = transaction.ProcessDeliver(&app); err != status.SUCCESS {
 				errorCode = err
 			} else {
+				function := "DeliverTx"
+				PrintTx(function, transaction)
 				switch t := transaction.(type) {
 				case *action.ApplyValidator:
 					{
@@ -470,7 +472,11 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		Tags:      tags,
 	}
 
-	log.Debug("ABCI: DeliverTx Result", "result", result)
+	if result.Code == 0 {
+		log.Debug("ABCI: DeliverTx Result Successful")
+	} else {
+		log.Debug("ABCI: DeliverTx Result", "result", result)
+	}
 	return result
 }
 
@@ -524,5 +530,58 @@ func (app Application) Close() {
 
 	if app.SDK != nil {
 		app.SDK.Stop()
+	}
+}
+
+func PrintTx(function string, transaction action.Transaction) {
+	switch transaction := transaction.(type) {
+	case *action.Register:
+		actionType := "Register"
+		log.Debug(function+": "+actionType, "NodeName", transaction.NodeName)
+		log.Debug(function+": "+actionType, "Identity", transaction.Identity)
+		log.Debug(function+": "+actionType, "Owner", transaction.Owner)
+		log.Debug(function+": "+actionType, "AccountKey", transaction.AccountKey)
+		log.Debug(function+": "+actionType, "TendermintAddress", transaction.TendermintAddress)
+		log.Debug(function+": "+actionType, "TendermintPubKey", transaction.TendermintPubKey)
+	case *action.Send:
+		actionType := "Send"
+		log.Debug(function+": "+actionType, "Owner", transaction.Owner)
+		log.Debug(function+": "+actionType, "SendTo", transaction.SendTo)
+		log.Debug(function+": "+actionType, "Fee", transaction.Fee)
+		log.Debug(function+": "+actionType, "Gas", transaction.Gas)
+	case *action.Payment:
+		actionType := "Payment"
+		log.Debug(function+": "+actionType, "Owner", transaction.Owner)
+		log.Debug(function+": "+actionType, "SendTo", transaction.SendTo)
+	case *action.ExternalSend:
+		actionType := "ExternalSend"
+		log.Debug(function+": "+actionType, "Owner", transaction.Owner)
+		log.Debug(function+": "+actionType, "Sender", transaction.Sender)
+		log.Debug(function+": "+actionType, "Receiver", transaction.Receiver)
+		log.Debug(function+": "+actionType, "Amount", transaction.Amount)
+		log.Debug(function+": "+actionType, "Fee", transaction.Fee)
+		log.Debug(function+": "+actionType, "Gas", transaction.Gas)
+		log.Debug(function+": "+actionType, "ExFee", transaction.ExFee)
+		log.Debug(function+": "+actionType, "ExGas", transaction.ExGas)
+		log.Debug(function+": "+actionType, "Chain", transaction.Chain)
+	case *action.Swap:
+		actionType := "Swap"
+		log.Debug(function+": "+actionType, "Owner", transaction.Owner)
+		log.Debug(function+": "+actionType, "SwapMessage", transaction.SwapMessage)
+		log.Debug(function+": "+actionType, "Stage", transaction.Stage)
+	case *action.Contract:
+		actionType := "Contract"
+		log.Debug(function+": "+actionType, "Owner", transaction.Owner)
+		log.Debug(function+": "+actionType, "Function", transaction.Function)
+		log.Debug(function+": "+actionType, "Data", transaction.Data)
+		log.Debug(function+": "+actionType, "Fee", transaction.Fee)
+		log.Debug(function+": "+actionType, "Gas", transaction.Gas)
+	case *action.ApplyValidator:
+		actionType := "ApplyValidator"
+		log.Debug(function+": "+actionType, "Owner", transaction.Owner)
+		log.Debug(function+": "+actionType, "Accountkey", transaction.AccountKey)
+		log.Debug(function+": "+actionType, "TendermintPubKey", transaction.TendermintPubKey)
+		log.Debug(function+": "+actionType, "TendermintAddress", transaction.TendermintAddress)
+		log.Debug(function+": "+actionType, "Stake", transaction.Stake)
 	}
 }

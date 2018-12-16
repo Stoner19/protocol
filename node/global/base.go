@@ -85,7 +85,7 @@ func NewContext(name string) *Context {
 		PaymentAccount:  "Payment",
 		RootDir:         os.Getenv("OLDATA") + "/" + name + "/olfullnode",
 
-		SDKAddress: "http://127.0.01:6900",
+		SDKAddress: "http://127.0.0.1:6900",
 	}
 }
 
