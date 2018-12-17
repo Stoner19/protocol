@@ -6,7 +6,7 @@ then
 	exit -1
 fi
 
-olclient update -c Chronos --account "LocalTest"
+olclient update -c Chronos --account "$1-Account"
 
-olclient register -c Chronos --identity "$1" --account "LocalTest" --node Chronos-Node
+olclient register -c Chronos --identity "$1" --account "$1-Account" --node Chronos-Node
 
