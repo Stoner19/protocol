@@ -769,7 +769,14 @@ func GetSigners(owner []byte, application Application) []id.PublicKey {
 		return nil
 	}
 
-	return []id.PublicKey{publicKey.(id.PublicKey)}
+	switch publicKey.(type) {
+	case id.PublicKey:
+		return []id.PublicKey{publicKey.(id.PublicKey)}
+
+	}
+
+	return nil
+
 }
 
 // Get the account information for a given user
