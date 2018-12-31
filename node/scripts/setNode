@@ -1,0 +1,97 @@
+#!/bin/bash
+
+alias setalice='. setNode Alice'
+alias setbob='. setNode Bob'
+alias setcarol='. setNode Carol'
+
+[[ $_ != $0 ]] || { echo "Script is run a subshell, no aliases are set, run it as . setNode [NodeName]" ; exit 0; }
+
+if [ -z "$1" ]
+then
+    echo "not enough arguments, required: [NodeName, for example: Alice]"
+    return
+fi
+
+if [ $1 = "Alice" ]
+then
+    rpcuser=oltest01
+    rpcpassword=olpass01
+    rpcport=18831
+elif [ $1 = "Bob" ]
+then
+    rpcuser=oltest02
+    rpcpassword=olpass02
+    rpcport=18832
+elif [ $1 = "Carol" ]
+then
+    rpcuser=oltest03
+    rpcpassword=olpass03
+    rpcport=18833
+elif [ $1 = "David" ]
+then
+    echo "David does not have Bitcoin or ethereum node"
+    return
+else
+    echo "User not supported"
+    return
+fi
+
+function btc(){
+    if [ -z "$1" ]
+    then
+        echo; tput setaf 1; echo "not enough arguments for bitcoin RPC"; tput sgr0; echo
+        return
+    elif [ $1 = "info" ]
+    then
+        btc_info
+        return
+    elif [ $1 = "wallet" ]
+    then
+        btc_wallet
+        return
+    fi
+
+    echo; tput setaf 3; echo $1; tput sgr0;
+    result=$(bitcoin-cli -regtest -rpcuser=$rpcuser -rpcpassword=$rpcpassword -rpcport=$rpcport $@) || { echo; return 1; }
+    echo "$result" | jq -e || { tput cuu1; tput el; echo "$result"; }
+    echo
+}
+
+function btc_info(){
+    btc getpeerinfo      && { tput cuu1; tput el; } || return 1
+    btc getnetworkinfo   && { tput cuu1; tput el; } || return 1
+    btc getaddednodeinfo && { tput cuu1; tput el; } || return 1
+    btc getmininginfo    && { tput cuu1; tput el; } || return 1
+    btc getmempoolinfo
+}
+
+function btc_wallet(){
+    btc getbalance           && { tput cuu1; tput el; } || return 1
+    btc listaddressgroupings && { tput cuu1; tput el; } || return 1
+    btc getwalletinfo
+}
+
+alias bitcoin='bitcoin-cli -regtest -rpcuser=$rpcuser -rpcpassword=$rpcpassword -rpcport=$rpcport'
+
+echo
+echo The following aliases were created for node $1:
+echo "   btc"
+echo "   btc info"
+echo "   btc wallet"
+echo
+echo You can switch node alises by using:
+echo "   setalice"
+echo "   setbob"
+echo "   cetcarol"
+echo
+echo "The most used RPCs for bitcoin are:"
+echo "   gettransaction"
+echo "   getrawtransaction"
+echo "   decoderawtransaction"
+echo "   getblockchaininfo"
+echo "   dumpprivkey"
+echo "   listunspent"
+echo "   sendtoaddress"
+echo
+echo "Type \"btc help\" for a full list of bitcoin RPCs"
+echo
